@@ -1,0 +1,48 @@
+local player = game:GetService("Players").LocalPlayer
+local scrolling = player.PlayerGui.Windows.UpgradesShop.Container.ScrollingFrame
+local knit = game:GetService("ReplicatedStorage").Packages._Index["sleitnick_knit@1.7.0"].knit
+local RF = knit.Services.UpgradesService.RF
+
+local function parseCash(str)
+    str = str:gsub("%$", ""):gsub(",", "")
+    local num, suf = str:match("([%d%.]+)([%a]*)")
+    num = tonumber(num) or 0
+    local s = {K=1e3,M=1e6,B=1e9,T=1e12,Qa=1e15,Qi=1e18,Sx=1e21,Sp=1e24}
+    return num * (s[suf] or 1)
+end
+
+local function autoUpgrade(name)
+    local cash = player.leaderstats.Cash.Value
+    local btn1 = scrolling[name].Main.Buttons.Buy1:FindFirstChild("Cash", true)
+    if not btn1 then return end
+    
+    local price1 = parseCash(btn1.Text)
+    if cash < price1 then return end -- Tidak cukup beli 1 pun, skip
+    
+    -- Hitung berapa yang bisa dibeli
+    local canBuy = math.floor(cash / price1)
+    
+    if canBuy >= 101 then
+        while player.leaderstats.Cash.Value >= price1 * 101 do
+            RF.Upgrade:InvokeServer(name, 101)
+            task.wait(0.1)
+        end
+    end
+    if canBuy >= 51 and canBuy < 101 then
+        while player.leaderstats.Cash.Value >= price1 * 51 do
+            RF.Upgrade:InvokeServer(name, 51)
+            task.wait(0.1)
+        end
+    end
+    if canBuy >= 1 and canBuy < 51 then
+        while player.leaderstats.Cash.Value >= price1 do
+            RF.Upgrade:InvokeServer(name, 1)
+            task.wait(0.1)
+        end
+    end
+end
+
+while task.wait(1) do
+    autoUpgrade("MovementSpeed")
+    autoUpgrade("Carry")
+end
